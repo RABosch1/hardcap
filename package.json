@@ -1,0 +1,15 @@
+{
+  "name": "hardcap",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A personal investment committee in a browser tab: rules-based capital deployment, stress tests and an LLM underwriting layer.",
+  "license": "MIT",
+  "author": "Roman Boschetto",
+  "scripts": {
+    "test": "node --test \"test/*.test.mjs\"",
+    "bundle": "node scripts/bundle.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

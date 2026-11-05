@@ -1,0 +1,9 @@
+name = "hardcap-data-proxy"
+main = "src/index.js"
+compatibility_date = "2026-11-01"
+
+# Secrets (never committed):
+#   npx wrangler secret put EODHD_TOKEN
+# Optional plain variable: lock browser use to your own page
+# [vars]
+# ALLOWED_ORIGIN = "https://YOUR-USERNAME.github.io"

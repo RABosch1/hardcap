@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hardcap · Personal Public Markets</title>
+<link rel="stylesheet" href="src/styles.css">
+</head>
+<body>
+
+<!-- ═════ TOPBAR ═════ -->
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-mark">Hard<em>cap</em></div>
+    <div class="brand-tag">Personal Public Markets</div>
+  </div>
+  <div class="topbar-r">
+    <button id="askclaude-toggle" class="askclaude-btn" onclick="window.HardcapApp.toggleChatPanel()" title="Ask Claude (⌘K)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+      </svg>
+      Ask Claude
+      <span class="kbd">⌘K</span>
+    </button>
+    <button id="live-refresh-pip" class="live-pip is-disabled" onclick="window.HardcapApp.handleLiveRefreshClick()" title="Refresh live data">
+      <span class="pip-dot"></span>
+      <span class="live-pip-text" id="live-pip-text">No data feed</span>
+      <span class="live-pip-time" id="live-pip-time"></span>
+    </button>
+    <div class="topbar-date" id="topbar-date"></div>
+  </div>
+</div>
+
+<!-- ═════ ASK CLAUDE SLIDE-OUT PANEL ═════ -->
+<div id="chat-panel-backdrop" class="chat-panel-backdrop" onclick="window.HardcapApp.closeChatPanel()"></div>
+<div id="chat-panel" class="chat-panel">
+  <div class="chat-panel-header">
+    <div>
+      <div class="chat-panel-title">Ask Claude</div>
+      <div class="chat-panel-subtitle">Your portfolio analyst</div>
+    </div>
+    <button class="chat-panel-close" onclick="window.HardcapApp.closeChatPanel()" title="Close (Esc)">×</button>
+  </div>
+  <div id="chat-panel-host" class="chat-panel-body">
+    <div id="chat-host"></div>
+  </div>
+</div>
+
+<!-- ═════ BANNER — live-data messages ═════ -->
+<div id="live-banner" class="live-banner" role="status"></div>
+<!-- ═════ DEMO BANNER — shown while the sample portfolio is loaded ═════ -->
+<div class="banner" id="demo-banner" style="display:none;">
+  <span class="banner-tag">Demo</span>
+  <span class="banner-text">Sample portfolio: fictional holdings and cash, priced at the Oct 7, 2026 research snapshot. Not investment advice. Import your own CSV to replace it.</span>
+</div>
+<!-- ═════ NAV ═════ -->
+<div class="nav">
+  <div class="nav-item active" data-target="deploy">Deploy</div>
+  <div class="nav-item" data-target="risk">Risk</div>
+  <div class="nav-item" data-target="holdings">Holdings · Memos</div>
+  <div class="nav-item" data-target="exposure">Exposure</div>
+  <div class="nav-item" data-target="universe">Universe</div>
+  <div class="nav-item" data-target="history">History</div>
+  <div class="nav-item" data-target="import">Import</div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════
+     DEPLOY · the cockpit
+═══════════════════════════════════════════════ -->
+<div class="page active" id="page-deploy">
+
+  <!-- Top KPI strip — single line of essential portfolio numbers -->
+  <div class="kpi-row" style="margin-bottom:18px;">
+    <div class="kpi">
+      <div class="kpi-label">Total Capital</div>
+      <div class="kpi-value" id="kpi-total">—</div>
+      <div class="kpi-sub" id="kpi-total-sub">—</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Equity Deployed</div>
+      <div class="kpi-value" id="kpi-equity">—</div>
+      <div class="kpi-sub" id="kpi-equity-sub">—</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Total G/L</div>
+      <div class="kpi-value" id="kpi-gl">—</div>
+      <div class="kpi-sub" id="kpi-gl-sub">—</div>
+    </div>
+    <div class="kpi accent">
+      <div class="kpi-label">IC Readiness</div>
+      <div class="kpi-value" id="kpi-ic">—</div>
+      <div class="kpi-sub" id="kpi-ic-sub">—</div>
+    </div>
+  </div>
+
+  <!-- ═════ THIS MONTH'S DEPLOYMENT — set by the rules engine ═════ -->
+  <div class="card" id="plan-card" style="margin-bottom:20px;border:1px solid var(--accent-line);">
+    <div class="card-h">
+      <div>
+        <div class="card-t">This Month's Deployment</div>
+        <div style="font-size:12px;color:var(--text-3);margin-top:3px;">Set by your rules. The same inputs always give the same dollars.</div>
+      </div>
+      <span class="pill pill-neutral" id="plan-mode-pill">—</span>
+    </div>
+    <div class="card-b">
+
+      <div class="plan-hero">
+        <div class="plan-cell">
+          <div class="plan-cell-label">Cash now</div>
+          <div class="plan-cell-val" id="cockpit-cash">—</div>
+          <div class="plan-cell-sub" id="cockpit-cash-sub">—</div>
+        </div>
+        <div class="plan-cell">
+          <div class="plan-cell-label">Hold back</div>
+          <div class="plan-cell-val" id="plan-hold">—</div>
+          <div class="plan-cell-sub" id="plan-hold-sub">—</div>
+        </div>
+        <div class="plan-cell">
+          <div class="plan-cell-label">Dry powder</div>
+          <div class="plan-cell-val" id="plan-excess">—</div>
+          <div class="plan-cell-sub" id="plan-excess-sub">—</div>
+        </div>
+        <div class="plan-cell plan-cell-go">
+          <label class="plan-cell-label" for="deploy-input" style="display:block;">Deploy this run</label>
+          <div class="plan-amount">
+            <span>$</span>
+            <input class="input mono" id="deploy-input" type="number" step="any" min="0" value="0">
+          </div>
+          <div class="plan-cell-sub" id="plan-budget-sub">—</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px;">
+        <button class="btn ghost xs" id="deploy-use-rule" type="button">Rule amount · <span id="deploy-use-rule-amount" style="font-variant-numeric:tabular-nums;">$0</span></button>
+        <button class="btn ghost xs" id="deploy-use-cash" type="button">All dry powder · <span id="deploy-use-cash-amount" style="font-variant-numeric:tabular-nums;">$0</span></button>
+        <span style="flex:1"></span>
+        <span style="font-size:12px;color:var(--text-3);" id="plan-explain"></span>
+      </div>
+
+      <div id="plan-results" style="margin-top:18px;"></div>
+
+      <details class="plan-details" id="plan-inputs-wrap">
+        <summary>Signals, conviction and buy zones the engine is reading</summary>
+        <div class="plan-details-b" id="plan-inputs"></div>
+      </details>
+      <details class="plan-details" id="plan-rules-wrap">
+        <summary>Rules</summary>
+        <div class="plan-details-b" id="plan-rules"></div>
+      </details>
+
+    </div>
+  </div>
+
+  <!-- ═════ INVESTMENT COMMITTEE — underwrites the plan; does not set the amounts ═════ -->
+  <div class="card" id="ic-card" style="margin-bottom:24px;overflow:hidden;">
+    <div style="background:linear-gradient(135deg,var(--accent-soft) 0%,transparent 60%);padding:20px 26px 16px;border-bottom:1px solid var(--rule-soft);">
+
+      <div style="display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center;margin-bottom:16px;">
+        <div>
+          <div class="card-t">Investment Committee</div>
+          <div style="font-size:13px;color:var(--text-2);margin-top:4px;max-width:70ch;">Underwrites the plan above and reviews every holding against the data. It explains the dollars and challenges your inputs. It does not set the amounts.</div>
+        </div>
+        <button class="btn-refresh" id="ic-run-btn" style="padding:13px 22px;font-size:14px;">
+          <span>Run IC on </span>
+          <span id="ic-run-amount" style="font-variant-numeric:tabular-nums;font-weight:700;">$0</span>
+        </button>
+      </div>
+
+      <!-- Tier picker — three explicit cards -->
+      <div style="font-size:10px;font-weight:700;color:var(--text-3);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;">Underwriting Tier</div>
+      <div class="ic-tier-grid">
+        <button type="button" class="ic-tier-card tier-fast active" data-ic-mode="fast" id="ic-mode-fast">
+          <div class="ic-tier-head">
+            <div class="ic-tier-name"><span style="font-size:14px;">⚡</span> Fast</div>
+            <span class="ic-tier-radio"></span>
+          </div>
+          <div class="ic-tier-desc">Sonnet 5.5 reads the plan and the data already on hand. Two sentences per buy, one line per holding.</div>
+          <div class="ic-tier-meta"><span><strong>20–40s</strong></span><span id="ic-est-fast">~$0.05</span><span>No refresh</span></div>
+        </button>
+
+        <button type="button" class="ic-tier-card tier-deep" data-ic-mode="deep" id="ic-mode-deep">
+          <div class="ic-tier-head">
+            <div class="ic-tier-name"><span style="font-size:14px;">🔍</span> Deep</div>
+            <span class="ic-tier-radio"></span>
+          </div>
+          <div class="ic-tier-desc">Opus 5.5. A tight note on every buy and every holding with a kill switch on each, plus proposed fixes to stale inputs.</div>
+          <div class="ic-tier-meta"><span><strong>1–3 min</strong></span><span id="ic-est-deep">~$0.30</span><span>Fills missing data</span></div>
+        </button>
+
+        <button type="button" class="ic-tier-card tier-forensic" data-ic-mode="forensic" id="ic-mode-forensic">
+          <div class="ic-tier-head">
+            <div class="ic-tier-name"><span style="font-size:14px;">🔬</span> Forensic</div>
+            <span class="ic-tier-radio"></span>
+          </div>
+          <div class="ic-tier-desc">Opus 5.5 at high effort. Pulls fresh quotes, 5-year fundamentals, estimates and earnings calls first, then writes a full memo per buy and a data-backed rundown of every holding.</div>
+          <div class="ic-tier-meta"><span><strong>4–10 min</strong></span><span id="ic-est-forensic">~$0.90</span><span>Full data pull</span></div>
+        </button>
+      </div>
+
+      <div style="display:flex;gap:14px;align-items:center;margin-top:12px;font-size:11px;color:var(--text-3);flex-wrap:wrap;">
+        <span id="ic-data-line">—</span>
+        <span style="flex:1"></span>
+        <span id="ic-last-run">—</span>
+      </div>
+
+    </div>
+    <div class="card-b">
+
+      <!-- Status / banner -->
+      <div id="ic-status" role="status" style="display:none;padding:10px 14px;background:var(--surface-2);border:1px solid var(--rule);border-radius:8px;font-size:13px;color:var(--text-2);margin-bottom:14px;"></div>
+
+      <!-- Result host -->
+      <div id="ic-result" style="display:none;"></div>
+
+      <!-- Empty state -->
+      <div id="ic-empty" style="text-align:center;padding:24px 16px;color:var(--text-3);font-size:13px;line-height:1.6;">
+        Pick a tier and hit <strong style="color:var(--ink);">Run IC</strong>. The amounts come from the plan above; the IC tests each one against the data and reviews every holding.
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═════ WHERE YOUR HOLDINGS STAND — computed scorecard ═════ -->
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-h">
+      <div>
+        <div class="card-t">Where Your Holdings Stand</div>
+        <div style="font-size:12px;color:var(--text-3);margin-top:3px;">Computed from the data on hand. Every figure says where it came from.</div>
+      </div>
+      <div class="row" style="gap:8px;">
+        <span class="pill pill-neutral" id="score-asof">—</span>
+        <button class="btn ghost xs" id="score-refresh" type="button">Refresh data</button>
+      </div>
+    </div>
+    <div class="card-b flush" style="padding-top:8px;padding-bottom:8px;overflow-x:auto;">
+      <table class="tbl sc-tbl">
+        <thead><tr>
+          <th>Position</th>
+          <th>Price · buy zone</th>
+          <th>Vs 52-wk high</th>
+          <th>Forward P/E</th>
+          <th>Div. yield</th>
+          <th>Rev. growth</th>
+          <th>Op. margin</th>
+          <th>Debt / EBITDA</th>
+          <th style="text-align:left;padding-left:12px;">Data</th>
+        </tr></thead>
+        <tbody id="score-body"></tbody>
+      </table>
+    </div>
+    <div id="score-foot" style="padding:4px 24px 16px;font-size:12px;color:var(--text-3);line-height:1.55;"></div>
+  </div>
+
+  <!-- ═════ Portfolio at a glance — verdict table ═════ -->
+  <div class="card" style="margin-bottom:8px;">
+    <div class="card-h">
+      <div class="card-t">Holdings · Verdict</div>
+      <span class="pill pill-accent" id="verdict-count">—</span>
+    </div>
+    <div class="card-b flush" style="padding-top:8px;padding-bottom:8px;overflow-x:auto;">
+      <table class="tbl" id="verdict-table">
+        <thead><tr>
+          <th>Position</th>
+          <th>Value</th>
+          <th>Return</th>
+          <th>Conviction</th>
+          <th>Verdict</th>
+          <th style="text-align:left;padding-left:12px;">Why</th>
+        </tr></thead>
+        <tbody id="verdict-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ═══════════════════════════════════════════════
+     RISK
+═══════════════════════════════════════════════ -->
+<div class="page" id="page-risk">
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Risk <em>Engine</em></h1>
+      
+    </div>
+  </div>
+
+  <div id="risk-summary"></div>
+
+  <div class="divider">
+    <div class="divider-line"></div>
+    <div class="divider-text">Required Trims · Hard Caps Breached</div>
+    <div class="divider-line"></div>
+  </div>
+
+  <div id="trim-list"></div>
+
+  <div class="divider">
+    <div class="divider-line"></div>
+    <div class="divider-text">Stress Test Scenarios</div>
+    <div class="divider-line"></div>
+  </div>
+
+  <div class="card" style="margin-bottom:24px;">
+    <div class="card-h">
+      <div class="card-t">Portfolio Impact by Scenario</div>
+      <span class="pill pill-neutral">Sorted worst-first</span>
+    </div>
+    <div class="card-b flush" style="padding-top:8px;padding-bottom:8px;overflow-x:auto;">
+      <table class="tbl">
+        <thead><tr>
+          <th>Scenario</th>
+          <th>$ Impact</th>
+          <th>% of Equity</th>
+          <th>Portfolio After</th>
+          <th>Severity</th>
+        </tr></thead>
+        <tbody id="stress-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="g2" style="margin-bottom:24px;">
+
+    <div class="card">
+      <div class="card-h">
+        <div class="card-t">Factor Exposure</div>
+        <span class="pill pill-neutral">$ at risk per factor</span>
+      </div>
+      <div class="card-b" id="factor-bars"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-h">
+        <div class="card-t">Position Downside</div>
+        <span class="pill pill-neutral">Worst-case per name</span>
+      </div>
+      <div class="card-b flush" style="padding-top:8px;padding-bottom:8px;overflow-x:auto;">
+        <table class="tbl">
+          <thead><tr>
+            <th>Position</th>
+            <th>Value</th>
+            <th>If 0</th>
+            <th>Worst $</th>
+            <th>Worst %</th>
+            <th style="text-align:left;padding-left:12px;">Scenario</th>
+          </tr></thead>
+          <tbody id="downside-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="risk-content"></div>
+
+  
+</div>
+
+
+<!-- ═══════════════════════════════════════════════
+     HOLDINGS · MEMOS
+═══════════════════════════════════════════════ -->
+<div class="page" id="page-holdings">
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Holdings · <em>IC Memos</em></h1>
+      
+    </div>
+  </div>
+
+  <div id="holdings-list"></div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════
+     EXPOSURE
+═══════════════════════════════════════════════ -->
+<div class="page" id="page-exposure">
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Sector <em>Exposure</em></h1>
+      
+    </div>
+  </div>
+
+  <div id="exposure-allocator"></div>
+
+  <div class="g2" style="margin-bottom:20px;">
+    <div class="card">
+      <div class="card-h">
+        <div class="card-t">Sector Weights vs Targets</div>
+      </div>
+      <div class="card-b" id="sector-bars"></div>
+    </div>
+    <div class="card">
+      <div class="card-h">
+        <div class="card-t">Position Concentration</div>
+        <span class="pill pill-neutral" id="cap-pill">22% cap</span>
+      </div>
+      <div class="card-b" id="concentration-bars"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-h">
+      <div class="card-t">Gap Analysis · Dollar to Hit Midpoint</div>
+    </div>
+    <div class="card-b flush" style="padding-top:8px;padding-bottom:8px;overflow-x:auto;">
+      <table class="tbl">
+        <thead><tr>
+          <th>Sector</th><th>Current</th><th>Target</th><th>Gap</th><th>Status</th>
+          <th style="text-align:left;padding-left:12px;">Action</th>
+        </tr></thead>
+        <tbody id="gap-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════
+     UNIVERSE
+═══════════════════════════════════════════════ -->
+<div class="page" id="page-universe">
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Investment <em>Universe</em></h1>
+      
+    </div>
+    <div class="row">
+      <span class="pill pill-neutral" id="universe-count">—</span>
+      <button class="btn" id="btn-add-ticker">＋ Add Ticker</button>
+    </div>
+  </div>
+
+  <div id="universe-list"></div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════
+     HISTORY
+═══════════════════════════════════════════════ -->
+<div class="page" id="page-history">
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Portfolio <em>History</em></h1>
+      
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-h"><div class="card-t">Total Capital</div></div>
+    <div class="card-b chart-wrap" id="history-chart" style="padding-top:12px;"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-h"><div class="card-t">Snapshot Log</div></div>
+    <div class="card-b flush" style="padding-top:8px;padding-bottom:8px;overflow-x:auto;">
+      <table class="tbl">
+        <thead><tr>
+          <th>Date</th>
+          <th>Total</th>
+          <th>Equity</th>
+          <th>Cash</th>
+          <th>Positions</th>
+          <th>Δ $</th>
+          <th>Δ %</th>
+        </tr></thead>
+        <tbody id="history-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="history-content"></div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════
+     ASK CLAUDE
+═══════════════════════════════════════════════ -->
+<!-- ═══════════════════════════════════════════════
+     IMPORT
+═══════════════════════════════════════════════ -->
+<div class="page" id="page-import">
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Import <em>Portfolio</em></h1>
+      <div class="page-subtitle">Drop your Fidelity CSV. Everything else updates automatically — prices, weights, gain/loss, sector exposure, deployment plan. If the file holds several accounts, you choose which ones count.</div>
+    </div>
+  </div>
+
+  <div class="g2" style="margin-bottom:20px;">
+
+    <div class="card">
+      <div class="card-h"><div class="card-t">Drop Fidelity CSV</div></div>
+      <div class="card-b">
+        <div class="dropzone" id="dropzone">
+          <div class="dropzone-icon">⌁</div>
+          <div class="dropzone-title">Drop your CSV here</div>
+          <div class="dropzone-sub">Fidelity.com → Accounts → Portfolio → Download → CSV</div>
+        </div>
+        <input type="file" id="csv-input" accept=".csv" style="display:none;">
+        <div id="import-status" role="status" style="margin-top:14px;font-size:13px;font-weight:500;"></div>
+        <div id="import-accounts"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><div class="card-t">Last Import</div></div>
+      <div class="card-b">
+        <div class="stat-grid">
+          <div class="stat-cell"><div class="stat-label">Imported</div><div class="stat-val" id="import-last">—</div></div>
+          <div class="stat-cell"><div class="stat-label">Positions</div><div class="stat-val" id="import-positions">—</div></div>
+          <div class="stat-cell"><div class="stat-label">Cash</div><div class="stat-val" id="import-cash">—</div></div>
+          <div class="stat-cell"><div class="stat-label">Snapshots</div><div class="stat-val" id="import-snapshots">—</div></div>
+        </div>
+
+        <div style="margin-top:20px;padding-top:18px;border-top:1px solid var(--rule);">
+          <div class="h-label" style="margin-bottom:8px;">Settings</div>
+          <div style="display:grid;grid-template-columns:1fr;gap:14px;">
+            <div>
+              <label class="field-label" for="setting-monthly">Typical monthly inflow ($) <span style="font-weight:400;color:var(--text-3);">— a rough figure for projections. The deploy engine works from your actual cash, not this.</span></label>
+              <input class="input mono" id="setting-monthly" type="number" step="any" style="max-width:200px;">
+            </div>
+            <div>
+              <label class="field-label">Anthropic API key <span style="font-weight:400;color:var(--text-3);">— powers Ask Claude and the IC analyzer</span></label>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <input class="input mono" id="setting-anthropic-key" type="password" placeholder="sk-ant-…" autocomplete="off" style="flex:1;min-width:280px;font-family:var(--mono);">
+                <button class="btn ghost sm" id="btn-save-anthropic-key">Save</button>
+                <span id="anthropic-key-status" style="font-size:12px;color:var(--text-3);"></span>
+              </div>
+              <div style="font-size:11px;color:var(--text-3);margin-top:6px;line-height:1.5;">Stored only in this browser's localStorage. Create one at platform.claude.com → Settings → API keys (the full key is shown once), and add credits under Settings → Billing. API use is billed separately from a Claude subscription.</div>
+            </div>
+            <div>
+              <label class="field-label">Cloudflare Worker URL <span style="font-weight:400;color:var(--text-3);">— powers live quotes from EODHD</span></label>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <input class="input mono" id="setting-worker-url" type="text" placeholder="https://your-worker.workers.dev" autocomplete="off" spellcheck="false" style="flex:1;min-width:280px;font-family:var(--mono);">
+                <button class="btn ghost sm" id="btn-save-worker-url">Save</button>
+                <button class="btn ghost sm" id="btn-test-worker-url">Test</button>
+                <span id="worker-url-status" style="font-size:12px;color:var(--text-3);"></span>
+              </div>
+              <div style="font-size:11px;color:var(--text-3);margin-top:6px;line-height:1.5;">Your Cloudflare Worker proxy holds your EODHD token as a secret. Click the topbar refresh button to pull fresh quotes anytime.</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:20px;padding-top:18px;border-top:1px solid var(--rule);">
+          <div class="h-label" style="margin-bottom:10px;">Backup &amp; Restore</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn ghost sm" id="btn-export-backup">⬇ Export JSON backup</button>
+            <button class="btn ghost sm" id="btn-import-backup">⬆ Restore from backup</button>
+            <input type="file" id="backup-input" accept=".json" style="display:none;">
+          </div>
+          <div id="backup-status" style="margin-top:10px;font-size:12px;"></div>
+          <div style="font-size:11px;color:var(--text-3);margin-top:10px;line-height:1.5;">Save a JSON file with everything: positions, history, your edited theses, conviction scores, deployment log. Restore on any browser or machine. Recommended: export monthly after each CSV import.</div>
+        </div>
+
+        <div style="margin-top:20px;padding-top:18px;border-top:1px solid var(--rule);">
+          <button class="btn danger sm" id="btn-clear-data">Clear all data + history</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="privacy">
+    <div class="privacy-icon">⚯</div>
+    <div>
+      <div class="privacy-title">Your data is stored in this browser</div>
+      <div class="privacy-text">Positions, cash, history, theses, conviction scores, rules, your API key and your Worker URL are kept in this browser's localStorage. There is no account and no Hardcap server. Two things leave the browser, and only when you use them: ticker symbols go to your Cloudflare Worker for prices, fundamentals and earnings calls, and when you run the IC or Ask Claude, your holdings, cash, rules and theses are sent to Anthropic's API under your own key. Clear your browser data and it is all gone, so export a JSON backup after each import.</div>
+    </div>
+  </div>
+</div>
+
+<script src="src/data/universe.js"></script>
+<script src="src/data/sectors.js"></script>
+<script src="src/data/research-snapshot.js"></script>
+<script src="src/data/sample-portfolio.js"></script>
+<script src="src/state.js"></script>
+<script src="src/analytics.js"></script>
+<script src="src/engine.js"></script>
+<script src="src/risk.js"></script>
+<script src="src/live-data.js"></script>
+<script src="src/transcripts.js"></script>
+<script src="src/claude-client.js"></script>
+<script src="src/scorecard.js"></script>
+<script src="src/ic.js"></script>
+<script src="src/chat.js"></script>
+<script src="src/render.js"></script>
+<script src="src/plan-ui.js"></script>
+<script src="src/app.js"></script>
+
+</body>
+</html>

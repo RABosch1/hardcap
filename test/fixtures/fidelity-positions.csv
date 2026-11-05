@@ -1,0 +1,12 @@
+Account Number,Account Name,Symbol,Description,Quantity,Last Price,Last Price Change,Current Value,Today's Gain/Loss Dollar,Today's Gain/Loss Percent,Total Gain/Loss Dollar,Total Gain/Loss Percent,Percent Of Account,Cost Basis Total,Average Cost Basis,Type
+Z00000001,Individual,SPAXX**,HELD IN MONEY MARKET,,,,$5000.00,,,,,52.08%,,,Cash,
+Z00000001,Individual,NVDA,NVIDIA CORPORATION COM,10,$200.00,+$2.00,"$2,000.00",+$20.00,+1.01%,+$500.00,+33.33%,20.83%,"$1,500.00",$150.00,Cash,
+Z00000001,Individual,XOM,EXXON MOBIL CORP COM,20,$110.00,-$1.00,"$2,200.00",-$20.00,-0.90%,-$200.00,-8.33%,22.92%,"$2,400.00",$120.00,Cash,
+Z00000001,Individual,Pending Activity,,,,,-$300.00,,,,,,,,,
+Z00000002,ROTH IRA,FZFXX**,HELD IN MONEY MARKET,,,,"$1,000.00",,,,,38.46%,,,Cash,
+Z00000002,ROTH IRA,NVDA,NVIDIA CORPORATION COM,5,$200.00,+$2.00,"$1,000.00",+$10.00,+1.01%,+$100.00,+11.11%,38.46%,$900.00,$180.00,Cash,
+Z00000002,ROTH IRA,BTC/USD,BITCOIN,0.01,"$60,000.00",,$600.00,,,+$100.00,+20.00%,23.08%,$500.00,"$50,000.00",Cash,
+
+"The data and information in this spreadsheet is provided to you solely for your use and is not for distribution."
+"Brokerage services are provided by Fidelity Brokerage Services LLC (FBS), 900 Salem Street, Smithfield, RI 02917."
+"Date downloaded Oct-08-2026 4:05 p.m ET"
